@@ -1,8 +1,8 @@
   push:
   build-amd64:
 name: Docker
-
-        run: |
+name: Docker
+on:
   push:
     branches: [ "master" ]
     tags: [ 'v*.*.*' ]
@@ -11,12 +11,8 @@ name: Docker
   schedule:
     - cron: '33 15 * * *'
 
-
-  build-amd64:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
       packages: write
+  build-amd64:
       id-token: write
     steps:
       - name: Checkout repository
