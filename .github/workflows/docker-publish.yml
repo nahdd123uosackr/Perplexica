@@ -1,156 +1,141 @@
+  push:
+  build-amd64:
 name: Docker
 
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-on:
+        run: |
+  push:
+    branches: [ "master" ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ "master" ]
   schedule:
     - cron: '33 15 * * *'
-      build-amd64:
-        runs-on: ubuntu-latest
-        permissions:
-          contents: read
-          packages: write
-          id-token: write
-        steps:
-          - name: Checkout repository
-            uses: actions/checkout@v4
 
-          - name: Install cosign
-            if: github.event_name != 'pull_request'
-            uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 #v3.5.0
-            with:
-              cosign-release: 'v2.2.4'
 
-          - name: Set up Docker Buildx
-            uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
-
-          - name: Log into registry ${{ env.REGISTRY }}
-            if: github.event_name != 'pull_request'
-            uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
-            with:
-              registry: ${{ env.REGISTRY }}
-              username: ${{ github.actor }}
-              password: ${{ secrets.GITHUB_TOKEN }}
-
-          - name: Extract version from release tag
-            if: github.event_name == 'release'
-            id: version
-            run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-
-          - name: Build and push AMD64 Docker image (main)
-            if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-            uses: docker/build-push-action@v5
-            with:
-              context: .
-              platforms: linux/amd64
-              push: true
-              tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:amd64
-              cache-from: type=gha
-              cache-to: type=gha,mode=max
-
-          - name: Build and push AMD64 Docker image (release)
-            if: github.event_name == 'release'
-            uses: docker/build-push-action@v5
-            with:
-              context: .
-              platforms: linux/amd64
-              push: true
-              tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-amd64
-              cache-from: type=gha
-              cache-to: type=gha,mode=max
-
-      build-arm64:
-        runs-on: ubuntu-latest
-        permissions:
-          contents: read
-          packages: write
-          id-token: write
-        steps:
-          - name: Checkout repository
-            uses: actions/checkout@v4
-
-          - name: Install cosign
-            if: github.event_name != 'pull_request'
-            uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 #v3.5.0
-            with:
-              cosign-release: 'v2.2.4'
-
-          - name: Set up Docker Buildx
-            uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
-
-          - name: Log into registry ${{ env.REGISTRY }}
-            if: github.event_name != 'pull_request'
-            uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
-            with:
-              registry: ${{ env.REGISTRY }}
-              username: ${{ github.actor }}
-              password: ${{ secrets.GITHUB_TOKEN }}
-
-          - name: Extract version from release tag
-            if: github.event_name == 'release'
-            id: version
-            run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-
-          - name: Build and push ARM64 Docker image (main)
-            if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-            uses: docker/build-push-action@v5
-            with:
-              context: .
-              platforms: linux/arm64
-              push: true
-              tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64
-              cache-from: type=gha
-              cache-to: type=gha,mode=max
-
-          - name: Build and push ARM64 Docker image (release)
-            if: github.event_name == 'release'
-            uses: docker/build-push-action@v5
-            with:
-              context: .
-              platforms: linux/arm64
-              push: true
-              tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-arm64
-              cache-from: type=gha
-              cache-to: type=gha,mode=max
-
-      manifest:
-        needs: [build-amd64, build-arm64]
-        runs-on: ubuntu-latest
-        steps:
-          - name: Log into registry ${{ env.REGISTRY }}
-            if: github.event_name != 'pull_request'
-            uses: docker/login-action@v3
-            with:
-              registry: ${{ env.REGISTRY }}
-              username: ${{ github.actor }}
-              password: ${{ secrets.GITHUB_TOKEN }}
-
-          - name: Extract version from release tag
-            if: github.event_name == 'release'
-            id: version
-            run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-
-          - name: Create and push multi-arch manifest for main
-            if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-            run: |
-              IMAGE_NAME=${{ env.IMAGE_NAME }}
-              REGISTRY=${{ env.REGISTRY }}
-              docker manifest create $REGISTRY/$IMAGE_NAME:main \
-                --amend $REGISTRY/$IMAGE_NAME:amd64 \
-                --amend $REGISTRY/$IMAGE_NAME:arm64
-              docker manifest push $REGISTRY/$IMAGE_NAME:main
-
-          - name: Create and push multi-arch manifest for releases
-            if: github.event_name == 'release'
-            run: |
-              IMAGE_NAME=${{ env.IMAGE_NAME }}
-              REGISTRY=${{ env.REGISTRY }}
-              docker manifest create $REGISTRY/$IMAGE_NAME:${{ env.RELEASE_VERSION }} \
-                --amend $REGISTRY/$IMAGE_NAME:${{ env.RELEASE_VERSION }}-amd64 \
-                --amend $REGISTRY/$IMAGE_NAME:${{ env.RELEASE_VERSION }}-arm64
-              docker manifest push $REGISTRY/$IMAGE_NAME:${{ env.RELEASE_VERSION }}
+  build-amd64:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install cosign
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 #v3.5.0
+        with:
+          cosign-release: 'v2.2.4'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+      - name: Log into GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract version from release tag
+        if: github.event_name == 'release'
+        id: version
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Build and push AMD64 Docker image (main)
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/${{ github.repository }}:amd64
+          cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Build and push AMD64 Docker image (release)
+        if: github.event_name == 'release'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ env.RELEASE_VERSION }}-amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  build-arm64:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install cosign
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 #v3.5.0
+        with:
+          cosign-release: 'v2.2.4'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+      - name: Log into GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract version from release tag
+        if: github.event_name == 'release'
+        id: version
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Build and push ARM64 Docker image (main)
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: ghcr.io/${{ github.repository }}:arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push ARM64 Docker image (release)
+        if: github.event_name == 'release'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ env.RELEASE_VERSION }}-arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  manifest:
+    needs: [build-amd64, build-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log into GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract version from release tag
+        if: github.event_name == 'release'
+        id: version
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Create and push multi-arch manifest for main
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        run: |
+          IMAGE_NAME=${{ github.repository }}
+          docker manifest create ghcr.io/$IMAGE_NAME:main \
+            --amend ghcr.io/$IMAGE_NAME:amd64 \
+            --amend ghcr.io/$IMAGE_NAME:arm64
+          docker manifest push ghcr.io/$IMAGE_NAME:main
+      - name: Create and push multi-arch manifest for releases
+        if: github.event_name == 'release'
+        run: |
+          IMAGE_NAME=${{ github.repository }}
+          docker manifest create ghcr.io/$IMAGE_NAME:${{ env.RELEASE_VERSION }} \
+            --amend ghcr.io/$IMAGE_NAME:${{ env.RELEASE_VERSION }}-amd64 \
+            --amend ghcr.io/$IMAGE_NAME:${{ env.RELEASE_VERSION }}-arm64
+          docker manifest push ghcr.io/$IMAGE_NAME:${{ env.RELEASE_VERSION }}
+          IMAGE_NAME=${{ github.repository }}
 
