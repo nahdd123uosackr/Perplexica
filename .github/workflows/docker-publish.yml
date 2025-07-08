@@ -1,6 +1,4 @@
-  push:
-  build-amd64:
-name: Docker
+
 name: Docker
 on:
   push:
